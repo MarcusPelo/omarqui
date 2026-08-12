@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "marcuspelo.omarqui",
+  "name": "Omarqui",
+  "version": "0.1.0",
+  "author": "marcuspelo",
+  "license": "MIT",
+  "description": "Torrent speed and aggregate status via Qui (qBittorrent management).",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Qui Torrents",
+    "description": "Shows download/upload speed and aggregate status across the qBittorrent instances managed by Qui.",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "baseUrl": "http://localhost:7476",
+      "refreshIntervalSec": 10
+    },
+    "schema": [
+      {
+        "key": "baseUrl",
+        "type": "string",
+        "label": "Qui base URL",
+        "description": "Base URL of the Qui instance (no trailing slash)",
+        "defaultValue": "http://localhost:7476"
+      },
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 5,
+        "max": 300,
+        "step": 5,
+        "defaultValue": 10
+      }
+    ]
+  }
+}
