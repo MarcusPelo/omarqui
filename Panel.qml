@@ -13,7 +13,9 @@ Panel {
 
   readonly property string baseUrl: {
     var v = settings ? settings.baseUrl : undefined
-    return (typeof v === "string" && v.length > 0) ? v : "http://localhost:7476"
+    if (typeof v === "string" && v.length > 0) return v
+    if (root.envBaseUrl) return root.envBaseUrl
+    return "http://localhost:7476"
   }
   readonly property int pollInterval: {
     var v = settings ? settings.refreshIntervalSec : undefined
@@ -26,6 +28,7 @@ Panel {
   readonly property string barIcon: "󰇚"
 
   property string apiKey: ""
+  property string envBaseUrl: ""
   property bool apiKeyLoaded: false
   property var stats: ({})
   property var instances: []
@@ -126,6 +129,7 @@ Panel {
       var key = line.substring(0, eq).trim()
       var value = line.substring(eq + 1).trim().replace(/^["']|["']$/g, "")
       if (key === "API_KEY") root.apiKey = value
+      else if (key === "BASE_URL") root.envBaseUrl = value
     }
     apiKeyLoaded = true
   }
@@ -244,7 +248,7 @@ Panel {
 
   function saveSettings() {
     var url = String(root.draftBaseUrl || "").trim()
-    if (!url) url = "http://localhost:7476"
+    if (!url) url = root.envBaseUrl || "http://localhost:7476"
     var interval = Math.max(5, Math.min(300, Math.round(Number(root.draftRefreshIntervalSec) || 10)))
     var next = { baseUrl: url, refreshIntervalSec: interval }
 
@@ -673,6 +677,15 @@ Panel {
           Text {
             Layout.fillWidth: true
             text: "The API key stays in ~/.config/omarqui/.env and is not editable here."
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+
+          Text {
+            Layout.fillWidth: true
+            text: "Tip: disabling and re-enabling the plugin resets this field. Add BASE_URL=... to ~/.config/omarqui/.env to keep a fallback that survives that."
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Style.font.caption
