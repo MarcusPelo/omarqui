@@ -2,6 +2,12 @@
 
 An [Omarchy](https://omarchy.org/) bar widget for [Qui](https://github.com/autobrr/qui), the self-hosted qBittorrent management dashboard. See aggregate torrent speed and status at a glance, and manage torrents across all your qBittorrent instances without leaving the desktop.
 
+![Panel](preview.png)
+
+### In the bar
+
+![On the desktop](images/desktop.png)
+
 ## Features
 
 - **Bar chip** — aggregate download speed across every qBittorrent instance Qui manages, with a tooltip summary
