@@ -67,6 +67,12 @@ Panel {
   property int draftRefreshIntervalSec: 10
   property string settingsStatusText: ""
 
+  // Sent over each curl process's stdin via -K - (see the Process blocks
+  // below) instead of a -H argument, so the API key never appears in argv.
+  function apiKeyHeaderConfig() {
+    return 'header = "X-API-Key: ' + root.apiKey + '"\n'
+  }
+
   function formatSpeed(bytesPerSec) {
     var v = Number(bytesPerSec) || 0
     if (v < 1024) return v.toFixed(0) + " B/s"
@@ -143,15 +149,15 @@ Panel {
     }
     if (!statsProc.running) {
       loading = true
-      statsProc.command = ["curl", "-fsS", "--max-time", "6",
-        "-H", "X-API-Key: " + apiKey,
+      statsProc.command = ["curl", "-fsS", "--max-time", "6", "-K", "-",
         root.baseUrl + "/api/torrents/cross-instance?limit=1"]
+      statsProc.stdinEnabled = true
       statsProc.running = true
     }
     if (!instancesProc.running) {
-      instancesProc.command = ["curl", "-fsS", "--max-time", "6",
-        "-H", "X-API-Key: " + apiKey,
+      instancesProc.command = ["curl", "-fsS", "--max-time", "6", "-K", "-",
         root.baseUrl + "/api/instances"]
+      instancesProc.stdinEnabled = true
       instancesProc.running = true
     }
   }
@@ -182,8 +188,8 @@ Panel {
     torrentsLoading = true
     var url = root.baseUrl + "/api/torrents/cross-instance?limit=500&sort=added_on&order=desc"
     if (searchQuery) url += "&search=" + encodeURIComponent(searchQuery)
-    torrentsProc.command = ["curl", "-fsS", "--max-time", "8",
-      "-H", "X-API-Key: " + apiKey, url]
+    torrentsProc.command = ["curl", "-fsS", "--max-time", "8", "-K", "-", url]
+    torrentsProc.stdinEnabled = true
     torrentsProc.running = true
   }
 
@@ -205,11 +211,11 @@ Panel {
   function torrentAction(torrent, action) {
     if (!torrent || actionProc.running) return
     root.actionInProgress = torrent.hash + ":" + action
-    actionProc.command = ["curl", "-fsS", "--max-time", "8", "-X", "POST",
-      "-H", "X-API-Key: " + root.apiKey,
+    actionProc.command = ["curl", "-fsS", "--max-time", "8", "-X", "POST", "-K", "-",
       "-H", "Content-Type: application/json",
       "-d", JSON.stringify({ action: action, hashes: [torrent.hash] }),
       root.baseUrl + "/api/instances/" + torrent.instance_id + "/torrents/bulk-action"]
+    actionProc.stdinEnabled = true
     actionProc.running = true
   }
 
@@ -276,9 +282,9 @@ Panel {
 
   function fetchCategories(instanceId) {
     if (!apiKey || categoriesProc.running) return
-    categoriesProc.command = ["curl", "-fsS", "--max-time", "6",
-      "-H", "X-API-Key: " + apiKey,
+    categoriesProc.command = ["curl", "-fsS", "--max-time", "6", "-K", "-",
       root.baseUrl + "/api/instances/" + instanceId + "/categories"]
+    categoriesProc.stdinEnabled = true
     categoriesProc.running = true
   }
 
@@ -308,8 +314,7 @@ Panel {
     root.addStatusError = false
     root.addStatusText = ""
 
-    var args = ["curl", "-s", "--max-time", "20", "-X", "POST",
-      "-H", "X-API-Key: " + root.apiKey,
+    var args = ["curl", "-s", "--max-time", "20", "-X", "POST", "-K", "-",
       "-F", "paused=" + (root.addPaused ? "true" : "false")]
     if (root.addCategory) args = args.concat(["-F", "category=" + root.addCategory])
 
@@ -324,6 +329,7 @@ Panel {
       root.baseUrl + "/api/instances/" + root.addInstanceId + "/torrents"])
 
     addTorrentProc.command = args
+    addTorrentProc.stdinEnabled = true
     addTorrentProc.running = true
   }
 
@@ -379,7 +385,11 @@ Panel {
     path: Quickshell.env("HOME") + "/.config/omarqui/.env"
     watchChanges: true
     printErrors: false
-    onLoaded: root.parseEnv(text())
+    onLoaded: {
+      root.parseEnv(text())
+      envPermProc.command = ["chmod", "600", envFile.path]
+      envPermProc.running = true
+    }
     onLoadFailed: {
       root.apiKeyLoaded = true
       root.hasError = true
@@ -387,8 +397,19 @@ Panel {
     }
   }
 
+  // Enforces 0600 on the credential file every time it's (re-)loaded, since
+  // it holds the Qui API key and nothing else guarantees its mode.
+  Process {
+    id: envPermProc
+  }
+
   Process {
     id: statsProc
+    stdinEnabled: true
+    onStarted: {
+      statsProc.write(root.apiKeyHeaderConfig())
+      statsProc.stdinEnabled = false
+    }
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.handleStats(text)
@@ -404,6 +425,11 @@ Panel {
 
   Process {
     id: instancesProc
+    stdinEnabled: true
+    onStarted: {
+      instancesProc.write(root.apiKeyHeaderConfig())
+      instancesProc.stdinEnabled = false
+    }
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.handleInstances(text)
@@ -412,6 +438,11 @@ Panel {
 
   Process {
     id: torrentsProc
+    stdinEnabled: true
+    onStarted: {
+      torrentsProc.write(root.apiKeyHeaderConfig())
+      torrentsProc.stdinEnabled = false
+    }
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.handleTorrents(text)
@@ -423,6 +454,11 @@ Panel {
 
   Process {
     id: actionProc
+    stdinEnabled: true
+    onStarted: {
+      actionProc.write(root.apiKeyHeaderConfig())
+      actionProc.stdinEnabled = false
+    }
     onExited: function(code) {
       root.actionInProgress = ""
       root.confirmDeleteHash = ""
@@ -458,6 +494,11 @@ Panel {
 
   Process {
     id: categoriesProc
+    stdinEnabled: true
+    onStarted: {
+      categoriesProc.write(root.apiKeyHeaderConfig())
+      categoriesProc.stdinEnabled = false
+    }
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.handleCategories(text)
@@ -466,6 +507,11 @@ Panel {
 
   Process {
     id: addTorrentProc
+    stdinEnabled: true
+    onStarted: {
+      addTorrentProc.write(root.apiKeyHeaderConfig())
+      addTorrentProc.stdinEnabled = false
+    }
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.handleAddTorrentResult(text)

@@ -43,6 +43,10 @@ omarchy plugin add https://github.com/marcuspelo/omarqui.git
    ```
    This step is optional if `BASE_URL` is already set in `.env`.
 
+## Security
+
+The Qui API key never appears in process arguments: every `curl` call sends it as an HTTP header supplied over the child process's stdin (`curl -K -` with a `header = "X-API-Key: ..."` config line), not as a `-H` argument — so it's invisible to `ps`/process inspection. `~/.config/omarqui/.env` is also set to mode `0600` automatically every time the plugin reads it; you can do this yourself too: `chmod 600 ~/.config/omarqui/.env`.
+
 ## Configuration
 
 Available settings (`shell.json`, or `omarchy bar set marcuspelo.omarqui <key> <value>`):
