@@ -21,6 +21,10 @@ Panel {
     var v = settings ? settings.refreshIntervalSec : undefined
     return (typeof v === "number" && v >= 5) ? v : 10
   }
+  readonly property string barMetric: {
+    var v = settings ? settings.barMetric : undefined
+    return (v === "Upload" || v === "Both") ? v : "Download"
+  }
 
   readonly property color fg: root.bar ? root.bar.foreground : Color.foreground
   readonly property color dim: Qt.darker(fg, 1.45)
@@ -65,6 +69,7 @@ Panel {
 
   property string draftBaseUrl: ""
   property int draftRefreshIntervalSec: 10
+  property string draftBarMetric: "Download"
   property string settingsStatusText: ""
 
   // Sent over each curl process's stdin via -K - (see the Process blocks
@@ -78,6 +83,15 @@ Panel {
     if (v < 1024) return v.toFixed(0) + " B/s"
     if (v < 1024 * 1024) return (v / 1024).toFixed(0) + " K/s"
     return (v / 1024 / 1024).toFixed(1) + " M/s"
+  }
+
+  function barText() {
+    if (root.barMetric === "Upload")
+      return "↑ " + root.formatSpeed(root.stats.totalUploadSpeed)
+    if (root.barMetric === "Both")
+      return "↓ " + root.formatSpeed(root.stats.totalDownloadSpeed)
+        + "  ↑ " + root.formatSpeed(root.stats.totalUploadSpeed)
+    return root.barIcon + " " + root.formatSpeed(root.stats.totalDownloadSpeed)
   }
 
   function formatBytes(bytes) {
@@ -241,6 +255,7 @@ Panel {
     root.viewMode = "settings"
     root.draftBaseUrl = root.baseUrl
     root.draftRefreshIntervalSec = root.pollInterval
+    root.draftBarMetric = root.barMetric
     root.settingsStatusText = ""
   }
 
@@ -256,7 +271,8 @@ Panel {
     var url = String(root.draftBaseUrl || "").trim()
     if (!url) url = root.envBaseUrl || "http://localhost:7476"
     var interval = Math.max(5, Math.min(300, Math.round(Number(root.draftRefreshIntervalSec) || 10)))
-    var next = { baseUrl: url, refreshIntervalSec: interval }
+    var metric = (root.draftBarMetric === "Upload" || root.draftBarMetric === "Both") ? root.draftBarMetric : "Download"
+    var next = { baseUrl: url, refreshIntervalSec: interval, barMetric: metric }
 
     root.draftBaseUrl = url
     root.settings = next
@@ -562,8 +578,8 @@ Panel {
     bar: root.bar
     text: root.hasError
       ? root.barIcon + " !"
-      : root.barIcon + " " + root.formatSpeed(root.stats.totalDownloadSpeed)
-    fixedWidth: root.bar && root.bar.vertical ? -1 : Style.space(78)
+      : root.barText()
+    fixedWidth: root.bar && root.bar.vertical ? -1 : (root.barMetric === "Both" ? Style.space(138) : Style.space(78))
     fixedHeight: root.bar && root.bar.vertical ? Style.space(26) : -1
     tooltipText: root.hasError
       ? root.errorText
@@ -697,6 +713,34 @@ Panel {
             accent: Color.accent
             fontFamily: root.fontFamily
             onModified: function(v) { root.draftRefreshIntervalSec = v }
+          }
+
+          Text {
+            text: "Bar metric"
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+          }
+
+          Flow {
+            Layout.fillWidth: true
+            spacing: 6
+
+            Repeater {
+              model: ["Download", "Upload", "Both"]
+              delegate: Button {
+                required property string modelData
+                text: modelData
+                foreground: root.fg
+                accent: Color.accent
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                horizontalPadding: Style.spacing.controlPaddingX
+                verticalPadding: Style.spacing.controlPaddingY
+                selected: root.draftBarMetric === modelData
+                onClicked: root.draftBarMetric = modelData
+              }
+            }
           }
 
           Text {

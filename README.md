@@ -10,7 +10,7 @@ An [Omarchy](https://omarchy.org/) bar widget for [Qui](https://github.com/autob
 
 ## Features
 
-- **Bar chip** — aggregate download speed across every qBittorrent instance Qui manages, with a tooltip summary
+- **Bar chip** — aggregate download and/or upload speed across every qBittorrent instance Qui manages (configurable via the `barMetric` setting), with a tooltip summary
 - **Status filters** — click "downloading / seeding / paused / errored" to filter the list
 - **Instance filter** — switch between "All" and individual qBittorrent instances
 - **Search** — filter by torrent name
@@ -55,6 +55,7 @@ Available settings (`shell.json`, or `omarchy bar set marcuspelo.omarqui <key> <
 |---|---|---|---|
 | `baseUrl` | string | `http://localhost:7476` | Base URL of your Qui instance (no trailing slash). Falls back to `BASE_URL` in `~/.config/omarqui/.env` when unset. |
 | `refreshIntervalSec` | integer | `10` | Seconds between background refreshes (5–300) |
+| `barMetric` | enum | `Download` | What the bar chip shows: `Download`, `Upload`, or `Both`. Also editable from the in-panel Settings screen. |
 
 ## Keyboard shortcuts
 
