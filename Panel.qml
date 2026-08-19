@@ -53,8 +53,19 @@ Panel {
     if (root.selectedInstanceId !== -1)
       list = list.filter(function(t) { return t.instance_id === root.selectedInstanceId })
     if (root.statusFilter)
-      list = list.filter(function(t) { return root.matchesStatusFilter(t.state, root.statusFilter) })
+      list = list.filter(function(t) { return root.matchesStatusFilter(t, root.statusFilter) })
     return list
+  }
+
+  // Not provided by Qui's cross-instance stats endpoint, so derived client-side
+  // from the same rawTorrents list the other StatChip counts are sourced from.
+  property int activeCount: {
+    var list = root.rawTorrents
+    var n = 0
+    for (var i = 0; i < list.length; i++) {
+      if ((Number(list[i].dlspeed) || 0) > 0 || (Number(list[i].upspeed) || 0) > 0) n++
+    }
+    return n
   }
 
   property string viewMode: "list"
@@ -126,12 +137,13 @@ Panel {
     return s.indexOf("paused") === 0 || s.indexOf("stopped") === 0
   }
 
-  function matchesStatusFilter(state, filter) {
-    var s = String(state || "")
+  function matchesStatusFilter(torrent, filter) {
+    var s = String(torrent.state || "")
     if (filter === "downloading") return s === "downloading" || s.indexOf("DL") !== -1 || s === "allocating" || s === "metaDL"
     if (filter === "seeding") return s === "uploading" || s.indexOf("UP") !== -1
     if (filter === "paused") return s.indexOf("paused") === 0 || s.indexOf("stopped") === 0
     if (filter === "error") return s.indexOf("error") !== -1 || s === "missingFiles" || s === "unknown"
+    if (filter === "active") return (Number(torrent.dlspeed) || 0) > 0 || (Number(torrent.upspeed) || 0) > 0
     return true
   }
 
@@ -939,6 +951,8 @@ Panel {
           Layout.fillWidth: true
           spacing: 4
 
+          StatChip { filterKey: "active"; label: "active"; count: root.activeCount }
+          Text { text: "·"; color: root.dim; font.pixelSize: Style.font.caption }
           StatChip { filterKey: "downloading"; label: "downloading"; count: root.stats.downloading || 0 }
           Text { text: "·"; color: root.dim; font.pixelSize: Style.font.caption }
           StatChip { filterKey: "seeding"; label: "seeding"; count: root.stats.seeding || 0 }
