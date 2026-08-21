@@ -584,6 +584,16 @@ Panel {
     }
   }
 
+  // Widest plausible "Both" text, used to size the bar chip so the
+  // label never overflows its reserved slot into neighboring widgets.
+  Text {
+    id: bothWidthMetric
+    visible: false
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.body
+    text: "↓ 999.9 M/s  ↑ 999.9 M/s"
+  }
+
   WidgetButton {
     id: button
     anchors.fill: parent
@@ -591,7 +601,7 @@ Panel {
     text: root.hasError
       ? root.barIcon + " !"
       : root.barText()
-    fixedWidth: root.bar && root.bar.vertical ? -1 : (root.barMetric === "Both" ? Style.space(138) : Style.space(78))
+    fixedWidth: root.bar && root.bar.vertical ? -1 : (root.barMetric === "Both" ? (bothWidthMetric.implicitWidth + Style.spaceReal(17)) : Style.space(78))
     fixedHeight: root.bar && root.bar.vertical ? Style.space(26) : -1
     tooltipText: root.hasError
       ? root.errorText
