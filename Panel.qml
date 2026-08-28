@@ -1095,6 +1095,7 @@ Panel {
                 text: root.stateLabel(row.modelData.state) + " · "
                   + Math.round((row.modelData.progress || 0) * 100) + "% · "
                   + root.formatBytes(row.modelData.size)
+                  + " · " + (Number(row.modelData.ratio) || 0).toFixed(2)
                   + (row.modelData.dlspeed > 0 ? " · ↓" + root.formatSpeed(row.modelData.dlspeed) : "")
                   + (row.modelData.upspeed > 0 ? " · ↑" + root.formatSpeed(row.modelData.upspeed) : "")
                 color: root.stateColor(row.modelData.state)

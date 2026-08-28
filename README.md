@@ -12,6 +12,7 @@ An [Omarchy](https://omarchy.org/) bar widget for [Qui](https://github.com/autob
 
 - **Bar chip** — aggregate download and/or upload speed across every qBittorrent instance Qui manages (configurable via the `barMetric` setting), with a tooltip summary
 - **Status filters** — click "active / downloading / seeding / paused / errored" to filter the list ("active" means torrents currently transferring data, i.e. non-zero download or upload speed)
+- **Ratio at a glance** — each torrent row shows its share ratio (e.g. `0.82`) right next to its size
 - **Instance filter** — switch between "All" and individual qBittorrent instances
 - **Search** — filter by torrent name
 - **Per-torrent actions** — pause, resume, delete (with a two-step confirm to avoid mistakes, and an option to delete the downloaded files too)
