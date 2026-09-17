@@ -221,12 +221,17 @@ Panel {
 
   function handleTorrents(raw) {
     torrentsLoading = false
+    // Replacing the array resets the ListView (its model is a plain JS
+    // array), which throws the view back to the top on every poll. Keep
+    // the user's place across the swap.
+    var anchor = torrentList.saveScroll()
     try {
       var data = JSON.parse(String(raw || ""))
       rawTorrents = data.cross_instance_torrents || []
     } catch (e) {
       rawTorrents = []
     }
+    torrentList.restoreScroll(anchor)
   }
 
   function selectInstance(id) {
@@ -580,6 +585,8 @@ Panel {
   onOpenedChanged: {
     if (opened) {
       root.viewMode = "list"
+      // Reopening starts at the top; only refreshes keep the position.
+      torrentList.positionViewAtBeginning()
       root.fetchTorrents()
     }
   }
@@ -1050,6 +1057,32 @@ Panel {
           model: root.torrents
           boundsBehavior: Flickable.StopAtBounds
           ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+          // The position is anchored on the first visible torrent rather
+          // than on contentY alone, so rows added or removed above it
+          // (new torrents sort first) do not shift the view.
+          function saveScroll() {
+            if (contentY <= 0) return null
+            var idx = indexAt(0, contentY)
+            if (idx < 0) idx = indexAt(0, contentY + spacing)
+            var item = idx >= 0 ? itemAtIndex(idx) : null
+            if (!item) return { y: contentY, hash: "", offset: 0 }
+            return { y: contentY, hash: model[idx].hash, offset: contentY - item.y }
+          }
+
+          function restoreScroll(anchor) {
+            if (!anchor) return
+            var idx = -1
+            for (var i = 0; anchor.hash && i < model.length; i++)
+              if (model[i].hash === anchor.hash) { idx = i; break }
+            if (idx >= 0) {
+              positionViewAtIndex(idx, ListView.Beginning)
+              contentY += anchor.offset
+            } else {
+              contentY = anchor.y
+            }
+            contentY = Math.max(0, Math.min(contentY, contentHeight - height))
+          }
 
           delegate: ColumnLayout {
             id: row
